@@ -1,0 +1,88 @@
+{
+  "expo": {
+    "name": "PGT Onboard",
+    "slug": "pgt-lastna",
+    "version": "1.0.0",
+    "orientation": "portrait",
+    "icon": "./assets/images/logos.png",
+    "scheme": "pgtlastna",
+    "userInterfaceStyle": "automatic",
+    "newArchEnabled": true,
+    "jsEngine": "hermes",
+
+    "android": {
+      "package": "com.vandolf123.pgtlastna",
+      "googleServicesFile": "./google-services.json",
+      "edgeToEdgeEnabled": true,
+      "predictiveBackGestureEnabled": false,
+      "adaptiveIcon": {
+        "foregroundImage": "./assets/images/logos.png",
+        "backgroundColor": "#ffffff"
+      },
+      "permissions": [
+        "ACCESS_FINE_LOCATION",
+        "ACCESS_COARSE_LOCATION",
+        "POST_NOTIFICATIONS",
+        "CAMERA",
+        "RECORD_AUDIO"
+      ],
+      "config": {
+        "googleMaps": {
+          "apiKey": "AIzaSyB7JcfJ0D3qepMYrKewniftNUjW3RnisHw"
+        }
+      },
+   "softwareKeyboardLayoutMode": "resize"
+    },
+    "web": {
+      "output": "static",
+      "favicon": "./assets/images/logos.png"
+    },
+    "plugins": [
+  
+      "expo-router",
+      [
+        "expo-splash-screen",
+        {
+          "image": "./assets/images/logos.png",
+          "imageWidth": 200,
+          "resizeMode": "contain",
+          "backgroundColor": "#ffffff"
+        }
+      ],
+      "expo-location",
+      "expo-notifications",
+      [
+        "expo-camera",
+        {
+          "cameraPermissionText": "Scan wallet QR codes."
+        }
+      ],
+      [
+        "expo-build-properties",
+        {
+          "android": {
+            "compileSdkVersion": 35,
+            "targetSdkVersion": 35,
+            "minSdkVersion": 24,
+            "kotlinVersion": "2.0.21"
+          },
+          "ios": {
+            "deploymentTarget": "15.1"
+          }
+        }
+      ],
+      "expo-secure-store"
+    ],
+    "experiments": {
+      "typedRoutes": true,
+      "reactCompiler": true
+    },
+    "extra": {
+      "EXPO_PUBLIC_GOOGLE_API_KEY": "AIzaSyC5Lc2xNncJWVRp0TogzBnBUKnsAIWIj8Y",
+      "router": {},
+      "eas": {
+        "projectId": "c51bf2a0-9606-4822-b89f-9345457672ab"
+      }
+    }
+  }
+}

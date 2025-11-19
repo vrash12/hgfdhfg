@@ -1,0 +1,27 @@
+{
+  "extends": "expo/tsconfig.base",
+  "compilerOptions": {
+    "strict": true,
+
+    // Path aliases
+    "paths": {
+      "@/*": ["./*"],
+      // 👇 Point TS at the React-Native typings for @firebase/auth
+      "@firebase/auth": ["./node_modules/@firebase/auth/dist/index.rn.d.ts"]
+    },
+
+    // Helps default imports from CJS/UMD declarations
+    "allowSyntheticDefaultImports": true,
+    "esModuleInterop": true,
+
+    // Ensure TS also reads any local .d.ts shims you add
+    "typeRoots": ["./types", "./node_modules/@types"]
+  },
+  "include": [
+    "**/*.ts",
+    "**/*.tsx",
+    "**/*.d.ts",
+    ".expo/types/**/*.ts",
+    "expo-env.d.ts"
+  ]
+}
