@@ -1,0 +1,315 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>SoilHive + Google Maps Demo</title>
+  <style>
+    * { box-sizing: border-box; }
+    body {
+      margin: 0;
+      font-family: Arial, sans-serif;
+      background: #f5f7f8;
+      color: #1f2937;
+    }
+
+    .app {
+      display: grid;
+      grid-template-columns: 360px 1fr;
+      height: 100vh;
+    }
+
+    .sidebar {
+      padding: 18px;
+      border-right: 1px solid #d1d5db;
+      background: #ffffff;
+      overflow: auto;
+    }
+
+    .sidebar h1 {
+      margin: 0 0 10px;
+      font-size: 22px;
+    }
+
+    .sidebar p {
+      margin: 0 0 14px;
+      line-height: 1.5;
+      color: #4b5563;
+      font-size: 14px;
+    }
+
+    .field {
+      margin-bottom: 14px;
+    }
+
+    .field label {
+      display: block;
+      margin-bottom: 6px;
+      font-weight: 700;
+      font-size: 14px;
+    }
+
+    .field input,
+    .field textarea,
+    .field button {
+      width: 100%;
+      font-size: 14px;
+      border-radius: 8px;
+    }
+
+    .field input,
+    .field textarea {
+      padding: 10px 12px;
+      border: 1px solid #cbd5e1;
+      background: #fff;
+    }
+
+    .field textarea {
+      min-height: 100px;
+      resize: vertical;
+      font-family: Consolas, monospace;
+    }
+
+    .row {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 10px;
+    }
+
+    button {
+      border: 0;
+      padding: 11px 14px;
+      background: #0f766e;
+      color: white;
+      cursor: pointer;
+      font-weight: 700;
+    }
+
+    button:hover {
+      background: #115e59;
+    }
+
+    .small {
+      font-size: 12px;
+      color: #6b7280;
+      margin-top: 6px;
+      line-height: 1.4;
+    }
+
+    .status {
+      margin: 12px 0;
+      padding: 10px 12px;
+      border-radius: 8px;
+      background: #eef2ff;
+      color: #3730a3;
+      font-size: 13px;
+      line-height: 1.4;
+    }
+
+    #map {
+      width: 100%;
+      height: 100%;
+    }
+
+    .result {
+      margin-top: 14px;
+    }
+
+    .result pre {
+      margin: 0;
+      padding: 12px;
+      background: #0b1020;
+      color: #d1fae5;
+      border-radius: 8px;
+      overflow: auto;
+      font-size: 12px;
+      line-height: 1.45;
+      max-height: 300px;
+    }
+  </style>
+</head>
+<body>
+  <div class="app">
+    <aside class="sidebar">
+      <h1>SoilHive + Google Maps</h1>
+      <p>
+        Paste a temporary SoilHive bearer token, set a dataset ID and a soil
+        property ID, then click anywhere on the map.
+      </p>
+
+      <div class="field">
+        <label for="token">SoilHive Bearer Token</label>
+        <textarea id="token" placeholder="Paste Bearer token here"></textarea>
+        <div class="small">
+          Use a generated SoilHive token here. Do not put your client secret in browser code.
+        </div>
+      </div>
+
+      <div class="row">
+        <div class="field">
+          <label for="datasetId">Dataset ID</label>
+          <input id="datasetId" type="number" placeholder="e.g. 1" />
+        </div>
+
+        <div class="field">
+          <label for="propertyId">Soil Property ID</label>
+          <input id="propertyId" type="number" placeholder="e.g. 13" />
+        </div>
+      </div>
+
+      <div class="field">
+        <button id="clearBtn" type="button">Clear Marker</button>
+      </div>
+
+      <div class="status" id="status">
+        Ready. Click the map after entering your token and IDs.
+      </div>
+
+      <div class="result">
+        <label for="output" style="display:block; margin-bottom:6px; font-weight:700; font-size:14px;">API Response</label>
+        <pre id="output">{}</pre>
+      </div>
+    </aside>
+
+    <main id="map"></main>
+  </div>
+
+  <script>
+    let map;
+    let marker;
+    let infoWindow;
+
+    function setStatus(message) {
+      document.getElementById("status").textContent = message;
+    }
+
+    function setOutput(data) {
+      document.getElementById("output").textContent =
+        JSON.stringify(data, null, 2);
+    }
+
+    async function querySoilHive(lat, lng) {
+      const token = document.getElementById("token").value.trim();
+      const datasetId = Number(document.getElementById("datasetId").value.trim());
+      const propertyId = Number(document.getElementById("propertyId").value.trim());
+
+      if (!token) {
+        throw new Error("Paste a SoilHive bearer token first.");
+      }
+      if (!datasetId || !propertyId) {
+        throw new Error("Enter both Dataset ID and Soil Property ID.");
+      }
+
+      const body = {
+        geometry: `POINT (${lng} ${lat})`,
+        datasets: [datasetId],
+        soilProperties: [propertyId]
+      };
+
+      const response = await fetch("https://api.soilhive.ag/v1/soil-data-by-geometry", {
+        method: "POST",
+        headers: {
+          "Authorization": `Bearer ${token}`,
+          "Content-Type": "application/json",
+          "Accept": "application/ld+json"
+        },
+        body: JSON.stringify(body)
+      });
+
+      const raw = await response.text();
+      let data;
+
+      try {
+        data = JSON.parse(raw);
+      } catch {
+        data = { raw };
+      }
+
+      if (!response.ok) {
+        throw new Error(
+          `SoilHive error ${response.status}: ${JSON.stringify(data)}`
+        );
+      }
+
+      return data;
+    }
+
+    function createPopupHtml(lat, lng, data) {
+      return `
+        <div style="min-width:220px; font-family:Arial,sans-serif;">
+          <div style="font-weight:700; margin-bottom:8px;">SoilHive Query</div>
+          <div><strong>Lat:</strong> ${lat.toFixed(6)}</div>
+          <div><strong>Lng:</strong> ${lng.toFixed(6)}</div>
+          <div style="margin-top:8px; font-size:12px; color:#374151;">
+            Full API response is shown in the left panel.
+          </div>
+        </div>
+      `;
+    }
+
+    async function handleMapClick(event) {
+      const lat = event.latLng.lat();
+      const lng = event.latLng.lng();
+
+      setStatus(`Loading soil data for ${lat.toFixed(6)}, ${lng.toFixed(6)} ...`);
+
+      try {
+        const data = await querySoilHive(lat, lng);
+        setOutput(data);
+
+        if (marker) marker.setMap(null);
+
+        marker = new google.maps.Marker({
+          position: { lat, lng },
+          map
+        });
+
+        if (!infoWindow) {
+          infoWindow = new google.maps.InfoWindow();
+        }
+
+        infoWindow.setContent(createPopupHtml(lat, lng, data));
+        infoWindow.open({
+          anchor: marker,
+          map
+        });
+
+        setStatus("Success. SoilHive response loaded.");
+      } catch (error) {
+        setStatus(error.message);
+        setOutput({ error: error.message });
+      }
+    }
+
+    function initMap() {
+      map = new google.maps.Map(document.getElementById("map"), {
+        center: { lat: 6.5244, lng: 3.3792 },
+        zoom: 5,
+        mapTypeId: "roadmap"
+      });
+
+      map.addListener("click", handleMapClick);
+
+      document.getElementById("clearBtn").addEventListener("click", () => {
+        if (marker) {
+          marker.setMap(null);
+          marker = null;
+        }
+        if (infoWindow) {
+          infoWindow.close();
+        }
+        setOutput({});
+        setStatus("Marker cleared.");
+      });
+    }
+
+    window.initMap = initMap;
+  </script>
+
+  <!-- Replace YOUR_GOOGLE_MAPS_API_KEY -->
+  <script
+    async
+    src="https://maps.googleapis.com/maps/api/js?key=AIzaSyBSlAhrRU1ELbdUOJ1ZLhKDm0C_FY1Ul18&loading=async&callback=initMap">
+  </script>
+</body>
+</html>
